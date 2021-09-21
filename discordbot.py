@@ -3,7 +3,7 @@ import discord
 import requests
 import json
 import random
-from replit import db
+from yt import yt_api_search
 from dotenv import load_dotenv
 
 client = discord.Client()
@@ -12,6 +12,11 @@ sad_words = ['sad', 'depressed', 'unhappy', 'angry', 'disappointed', 'miserable'
 
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
+
+# yt_queue = [['https://www.youtube.com/watch?v=IGM1T0t7qts', 'https://www.youtube.com/watch?v=bOtd9P2cD50',
+#       'https://www.youtube.com/watch?v=sq2e-SwL91o', 'https://www.youtube.com/watch?v=OUx6ZY60uiI']]
+
+yt_queue = []
 
 
 starter_encouragements = [
@@ -28,19 +33,6 @@ def get_quote():
     return quote
 
 
-def update_encouragements(encouraging_message):
-    if 'encouragements' is not db.keys():
-        encouragements = db['encouragements']
-        encouragements.append(encouraging_message)
-        db['encouragements'] = encouragements
-    else:
-        db['encouragements'] = [encouraging_message]
-
-def delete_encouragement(index):
-    encouragements = db['encouragements']
-    if len(encouragements) > index:
-        del encouragements[index]
-        db['encouragements'] = encouragements
 
 @client.event
 async def on_ready():
@@ -54,18 +46,29 @@ async def on_message(message):
 
     msg = message.content
 
-    if message.content.startswith('$hello'):
+    if msg.startswith('$hello'):
         await message.channel.send('Hello !')
 
     if message.content.startswith('$inspire'):
         quote = get_quote()
         await message.channel.send(quote)
 
-    options = starter_encouragements
-    if 'encouragements' in db.keys():
-        options = options + db['encouragements']
-
     if any(word in msg for word in sad_words):
-        await message.channel.send(random.choice(options))
+        await message.channel.send(random.choice(starter_encouragements))
+
+    if msg.startswith('-play'):
+        search_keywords = msg.split('-play ', 1)[1]
+        yt_results = yt_api_search(search_keywords)
+        yt_queue.append(yt_results)
+        print(search_keywords)
+        print(yt_queue)
+        await message.channel.send(yt_queue[0][0])
+
+    if msg.startswith('-other'):
+        await message.channel.send(random.choice(yt_queue[0]))
+
+    if msg.startswith('-next'):
+        yt_queue.pop(0)
+        await message.channel.send(random.choice(yt_queue[0]))
 
 client.run(TOKEN)
